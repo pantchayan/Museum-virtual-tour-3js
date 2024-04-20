@@ -21,6 +21,7 @@ let isColliding_right = false;
 let loaded = false
 let is_pointer_locked = false
 let model;
+let interactable_objects = []
 
 // camera
 const camera = new THREE.PerspectiveCamera(
@@ -224,6 +225,7 @@ manager.onLoad = function () {
     element.material.color.set(0xff0000)
     element.material.transparent   = false
   });
+  interactable_objects = [box1, box2, box3]
 };
 manager.onError = function (e) {
   console.log("error: ", e);
@@ -256,6 +258,41 @@ loader.load("assets/Museum_Collider.glb", (gltf) => {
   scene.add(model);
 });
 
+// test box
+const box1 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+box1.position.y = 4;
+scene.add(box1)
+const box2 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+box2.position.y = 4;
+box2.position.x = -2;
+scene.add(box2)
+const box3 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+box3.position.y = 4;
+box3.position.x = 2;
+scene.add(box3)
+
+// crosshair raycast
+const crosshair_raycast = new THREE.Raycaster()
+crosshair_raycast.far = 10
+let prev_selected = null
+
+function crosshair_logic(){
+  crosshair_raycast.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3()))
+
+  const crosshair_intersects = crosshair_raycast.intersectObjects(interactable_objects)
+  
+  if(crosshair_intersects.length > 0){
+    console.log("intersecting")
+    prev_selected = crosshair_intersects[0]
+    crosshair_intersects[0].object.material.color.set(0xff00000)
+  }
+  else{
+    if(prev_selected != null){
+      prev_selected.object.material.color.set(0xffffff)
+    }
+  }
+}
+
 // resize window listener
 addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -281,5 +318,6 @@ function animate() {
   requestAnimationFrame(animate);
   player_movement();  //player player_movement
   if(loaded)  update();   //checks collision
+  crosshair_logic()
 }
 animate();
