@@ -1,6 +1,16 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { GUI } from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm';
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { GUI } from "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm";
+import Stats from "three/addons/libs/stats.module.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
+
+const stats = new Stats();
+document.body.appendChild(stats.dom);
 
 // Player parameters
 const player = {
@@ -12,16 +22,16 @@ const player = {
 };
 
 // essential variables
-let collider_mesh_array = []
+let collider_mesh_array = [];
 let keyPressed = {};
 let isColliding_frwd = false;
 let isColliding_back = false;
 let isColliding_left = false;
 let isColliding_right = false;
-let loaded = false
-let is_pointer_locked = false
+let loaded = false;
+let is_pointer_locked = false;
 let model;
-let interactable_objects = []
+let interactable_objects = [];
 
 // camera
 const camera = new THREE.PerspectiveCamera(
@@ -30,7 +40,6 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-
 
 // scene
 const scene = new THREE.Scene();
@@ -44,7 +53,6 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.render(scene, camera);
 
-
 // keyboard event to store the status of key press
 addEventListener("keydown", (e) => {
   keyPressed[e.key.toLowerCase()] = true;
@@ -52,7 +60,6 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => {
   keyPressed[e.key.toLowerCase()] = false;
 });
-
 
 // pitch and yaw object creation
 // pitch stores the camera as a child and yaw stores pitch as a child
@@ -62,9 +69,9 @@ pitchObj.add(camera);
 
 var yawObj = new THREE.Object3D();
 yawObj.position.y = player.height;
+yawObj.position.z = 15 
 yawObj.add(pitchObj);
 scene.add(yawObj);
-
 
 // Player movement dunction
 function player_movement() {
@@ -96,7 +103,6 @@ function player_movement() {
   }
 }
 
-
 // Pointer lock over redner element
 const rendererEl = renderer.domElement;
 rendererEl.addEventListener("click", () => {
@@ -106,10 +112,10 @@ rendererEl.addEventListener("click", () => {
 });
 
 // pointer unlock
-document.addEventListener("pointerlockchange",()=>{
-  console.log("locking system")
-  is_pointer_locked = is_pointer_locked? false : true  //switching the is_pointer_locked state
-})
+document.addEventListener("pointerlockchange", () => {
+  console.log("locking system");
+  is_pointer_locked = is_pointer_locked ? false : true; //switching the is_pointer_locked state
+});
 
 // raycast
 const raycast_frwd = new THREE.Raycaster();
@@ -125,8 +131,8 @@ raycast_right.far = 2;
 raycast_down.far = 10;
 
 // collision threshold
-let surrounding_raycast_dist = 1.5
-let height_raycast_dist = 2
+let surrounding_raycast_dist = 1.5;
+let height_raycast_dist = 2;
 
 // function to check collisions
 function update() {
@@ -162,37 +168,54 @@ function update() {
   const intersects_down = raycast_down.intersectObjects(collider_mesh_array);
 
   // logic to stop moving when collision is detected
-  if (intersects_frwd.length > 0 && intersects_frwd[0].distance < surrounding_raycast_dist) {
+  if (
+    intersects_frwd.length > 0 &&
+    intersects_frwd[0].distance < surrounding_raycast_dist
+  ) {
     isColliding_frwd = true;
   } else {
     isColliding_frwd = false;
   }
 
-  if (intersects_back.length > 0 && intersects_back[0].distance < surrounding_raycast_dist) {
+  if (
+    intersects_back.length > 0 &&
+    intersects_back[0].distance < surrounding_raycast_dist
+  ) {
     isColliding_back = true;
   } else {
     isColliding_back = false;
   }
 
-  if (intersects_left.length > 0 && intersects_left[0].distance < surrounding_raycast_dist) {
+  if (
+    intersects_left.length > 0 &&
+    intersects_left[0].distance < surrounding_raycast_dist
+  ) {
     isColliding_left = true;
   } else {
     isColliding_left = false;
   }
 
-  if (intersects_right.length > 0 && intersects_right[0].distance < surrounding_raycast_dist) {
+  if (
+    intersects_right.length > 0 &&
+    intersects_right[0].distance < surrounding_raycast_dist
+  ) {
     isColliding_right = true;
   } else {
     isColliding_right = false;
   }
 
-  if (intersects_down.length > 0 && intersects_down[0].distance < height_raycast_dist) {
-    yawObj.position.y =  intersects_down[0].point.y + height_raycast_dist;
-  } else if (intersects_down.length > 0 && intersects_down[0].distance > height_raycast_dist + 0.1) {
+  if (
+    intersects_down.length > 0 &&
+    intersects_down[0].distance < height_raycast_dist
+  ) {
+    yawObj.position.y = intersects_down[0].point.y + height_raycast_dist;
+  } else if (
+    intersects_down.length > 0 &&
+    intersects_down[0].distance > height_raycast_dist + 0.1
+  ) {
     yawObj.position.y -= intersects_down[0].distance * player.gravity;
   }
 }
-
 
 // Camera look around mechanic
 addEventListener("mousemove", (e) => {
@@ -201,13 +224,13 @@ addEventListener("mousemove", (e) => {
   }
   if (is_pointer_locked && e.movementY) {
     pitchObj.rotation.x -= e.movementY * 0.002;
-    pitchObj.rotation.x = Math.max( //limiting turnup and down angle
+    pitchObj.rotation.x = Math.max(
+      //limiting turnup and down angle
       -Math.PI / 2,
       Math.min(Math.PI / 2, pitchObj.rotation.x)
     );
   }
 });
-
 
 // Load manager
 const manager = new THREE.LoadingManager();
@@ -218,14 +241,14 @@ manager.onProgress = function () {
   console.log("loading");
 };
 manager.onLoad = function () {
-  collider_mesh_array = model.children[2].children //pushing the collider object to an array
-  loaded = true
-  collider_mesh_array.forEach(element => {
-    element.material.wireframe   = true
-    element.material.color.set(0xff0000)
-    element.material.transparent   = false
+  collider_mesh_array = model.children[2].children; //pushing the collider object to an array
+  loaded = true;
+  collider_mesh_array.forEach((element) => {
+    element.material.wireframe = true;
+    element.material.color.set(0xff0000);
+    element.material.transparent = false;
   });
-  interactable_objects = [box1, box2, box3]
+  interactable_objects = [box1, box2, box3];
 };
 manager.onError = function (e) {
   console.log("error: ", e);
@@ -236,14 +259,14 @@ const light = new THREE.AmbientLight();
 scene.add(light);
 renderer.shadowMapDebug = true;
 
-const point = new THREE.PointLight(0xff0000, 20)
-point.position.y = 5.5
-point.castShadow = true
+const point = new THREE.PointLight(0xff0000, 20);
+point.position.y = 5.5;
+point.castShadow = true;
 // scene.add(point)
 
 const direction = new THREE.DirectionalLight();
 direction.intensity = 10;
-direction.castShadow = true
+direction.castShadow = true;
 scene.add(direction);
 renderer.shadowMap.antialias = true;
 
@@ -259,38 +282,113 @@ loader.load("assets/Museum_Collider.glb", (gltf) => {
 });
 
 // test box
-const box1 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+const box1 = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshStandardMaterial()
+);
 box1.position.y = 4;
-scene.add(box1)
-const box2 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+scene.add(box1);
+const box2 = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshStandardMaterial()
+);
 box2.position.y = 4;
 box2.position.x = -2;
-scene.add(box2)
-const box3 = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial())
+scene.add(box2);
+const box3 = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshStandardMaterial()
+);
 box3.position.y = 4;
 box3.position.x = 2;
-scene.add(box3)
+scene.add(box3);
+
+const blur_material = new THREE.MeshPhysicalMaterial();
+blur_material.transmission = 0.5;
+blur_material.thickness = 0.1;
+blur_material.roughness = 0.4;
+const blur_plane = new THREE.Mesh(
+  new THREE.PlaneGeometry(50, 50, 12, 12),
+  blur_material
+);
+blur_material.side = THREE.DoubleSide;
+blur_plane.rotateX(Math.PI);
 
 // crosshair raycast
-const crosshair_raycast = new THREE.Raycaster()
-crosshair_raycast.far = 10
-let prev_selected = null
+const crosshair_raycast = new THREE.Raycaster();
+crosshair_raycast.far = 10;
+let prev_selected = null;
+let crosshair_intersects = [];
 
-function crosshair_logic(){
-  crosshair_raycast.set(camera.getWorldPosition(new THREE.Vector3()), camera.getWorldDirection(new THREE.Vector3()))
+function crosshair_logic() {
+  crosshair_raycast.set(
+    camera.getWorldPosition(new THREE.Vector3()),
+    camera.getWorldDirection(new THREE.Vector3())
+  );
 
-  const crosshair_intersects = crosshair_raycast.intersectObjects(interactable_objects)
-  
-  if(crosshair_intersects.length > 0){
-    console.log("intersecting")
-    prev_selected = crosshair_intersects[0]
-    crosshair_intersects[0].object.material.color.set(0xff00000)
-  }
-  else{
-    if(prev_selected != null){
-      prev_selected.object.material.color.set(0xffffff)
+  crosshair_intersects =
+    crosshair_raycast.intersectObjects(interactable_objects);
+
+  if (crosshair_intersects.length > 0) {
+    // console.log("intersecting")
+    prev_selected = crosshair_intersects[0];
+    crosshair_intersects[0].object.material.color.set(0xff00000);
+    const selectedObject = prev_selected.object;
+    addSelectedObject(selectedObject);
+    outlinePass.selectedObjects = selectedObjects;
+  } else {
+    if (prev_selected != null) {
+      prev_selected.object.material.color.set(0xffffff);
+      outlinePass.selectedObjects = [];
     }
   }
+}
+
+addEventListener("mouseup", () => {
+  crosshair_intersects =
+    crosshair_raycast.intersectObjects(interactable_objects);
+
+  if (crosshair_intersects.length > 0) {
+    console.log("intersecting");
+    let pos = camera.getWorldPosition(new THREE.Vector3());
+    // pos = new THREE.Vector3(0,5,0)
+    crosshair_intersects[0].object.position.x = pos.x;
+    crosshair_intersects[0].object.position.y = pos.y + 0.5;
+    crosshair_intersects[0].object.position.z = pos.z - 4;
+    blur_plane.position.z = crosshair_intersects[0].object.position.z - 1.5;
+    scene.add(blur_plane);
+  }
+});
+
+let composer, effectFXAA, outlinePass;
+
+composer = new EffectComposer(renderer);
+
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+outlinePass = new OutlinePass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  scene,
+  camera
+);
+composer.addPass(outlinePass);
+
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
+
+effectFXAA = new ShaderPass(FXAAShader);
+effectFXAA.uniforms["resolution"].value.set(
+  1 / window.innerWidth,
+  1 / window.innerHeight
+);
+composer.addPass(effectFXAA);
+
+let selectedObjects = [];
+
+function addSelectedObject(object) {
+  selectedObjects = [];
+  selectedObjects.push(object);
 }
 
 // resize window listener
@@ -300,24 +398,46 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
 });
 
-
 // gui for collision threshold setting
-const gui = new GUI()
-let obj = {threshold: 1}
-const collison_threshold_folder = gui.addFolder("Collision Threshold")
-collison_threshold_folder.add(obj, "threshold").min(0).max(2).step(0.1).name("Surrounding Threshold").onChange((value)=>{
-  surrounding_raycast_dist = value
-})
-collison_threshold_folder.add(obj, "threshold").min(0).max(5).step(0.1).name("Height Threshold").onChange((value)=>{
-  height_raycast_dist = value
-})
+const gui = new GUI();
+let obj = { threshold: 1 };
+const collison_threshold_folder = gui.addFolder("Collision Threshold");
+collison_threshold_folder
+  .add(obj, "threshold")
+  .min(0)
+  .max(2)
+  .step(0.1)
+  .name("Surrounding Threshold")
+  .onChange((value) => {
+    surrounding_raycast_dist = value;
+  });
+collison_threshold_folder
+  .add(obj, "threshold")
+  .min(0)
+  .max(5)
+  .step(0.1)
+  .name("Height Threshold")
+  .onChange((value) => {
+    height_raycast_dist = value;
+  });
 
 // animate
 function animate() {
-  renderer.render(scene, camera);
+  // renderer.render(scene, camera);
+  composer.render();
   requestAnimationFrame(animate);
-  player_movement();  //player player_movement
-  if(loaded)  update();   //checks collision
-  crosshair_logic()
+  player_movement(); //player player_movement
+  if (loaded) update(); //checks collision
+  crosshair_logic();
+  box1.rotation.x += 0.01;
+  box1.rotation.y += 0.01;
+
+  box2.rotation.x += 0.01;
+  box2.rotation.y += 0.01;
+
+  box3.rotation.x += 0.01;
+  box3.rotation.y += 0.01;
+
+  stats.update();
 }
 animate();
